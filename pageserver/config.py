@@ -25,7 +25,7 @@ import argparse
 import os
 import logging
 logging.basicConfig(format='%(levelname)s:%(message)s',
-                    level=logging.DEBUG)
+                    level=logging.INFO)
 
 log = logging.getLogger(__name__)
 HERE = os.path.dirname(__file__)
