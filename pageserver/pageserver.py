@@ -13,15 +13,17 @@
   program is run).
 """
 
-import config    # Configure from .ini files and command line
-import logging   # Better than print statements
+import config  # Configure from .ini files and command line
+import logging  # Better than print statements
+
 logging.basicConfig(format='%(levelname)s:%(message)s',
                     level=logging.INFO)
 log = logging.getLogger(__name__)
 # Logging level may be overridden by configuration 
 
-import socket    # Basic TCP/IP communication on the internet
-import _thread   # Response computation runs concurrently with main program
+import socket  # Basic TCP/IP communication on the internet
+import _thread  # Response computation runs concurrently with main program
+import os  # Check if file in relative path
 
 
 def listen(portnum):
@@ -38,7 +40,7 @@ def listen(portnum):
     serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # Bind to port and make accessible from anywhere that has our IP address
     serversocket.bind(('', portnum))
-    serversocket.listen(1)    # A real server would have multiple listeners
+    serversocket.listen(1)  # A real server would have multiple listeners
     return serversocket
 
 
@@ -59,20 +61,14 @@ def serve(sock, func):
         _thread.start_new_thread(func, (clientsocket,))
 
 
-##
-# Starter version only serves cat pictures. In fact, only a
-# particular cat picture.  This one.
-##
-CAT = """
-     ^ ^
-   =(   )=
-"""
+DOCROOT = config.configuration().DOCROOT
 
 # HTTP response codes, as the strings we will actually send.
 # See:  https://en.wikipedia.org/wiki/List_of_HTTP_status_codes
 # or    http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
 ##
 STATUS_OK = "HTTP/1.0 200 OK\n\n"
+INVALID_PATHS = ["..", "//", "~", "^", "*"]
 STATUS_FORBIDDEN = "HTTP/1.0 403 Forbidden\n\n"
 STATUS_NOT_FOUND = "HTTP/1.0 404 Not Found\n\n"
 STATUS_NOT_IMPLEMENTED = "HTTP/1.0 401 Not Implemented\n\n"
@@ -83,7 +79,6 @@ def respond(sock):
     This server responds only to GET requests (not PUT, POST, or UPDATE).
     Any valid GET request is answered with an ascii graphic of a cat.
     """
-    sent = 0
     request = sock.recv(1024)  # We accept only short requests
     request = str(request, encoding='utf-8', errors='strict')
     log.info("--- Received request ----")
@@ -92,7 +87,28 @@ def respond(sock):
     parts = request.split()
     if len(parts) > 1 and parts[0] == "GET":
         transmit(STATUS_OK, sock)
-        transmit(CAT, sock)
+        url_path = parts[1][1:]
+        log.debug("user is trying to access {}".format(url_path))
+        source_path = os.path.join(DOCROOT, url_path)  # get rid of "/"
+        # Checking to see if access either html or css or homepage
+        if url_path and ".html" not in url_path and ".css" not in url_path:
+            transmit(STATUS_FORBIDDEN, sock)
+        else:
+            for i in INVALID_PATHS:
+                if i in parts[1]:  # Not trimmed here because "//" in beginning
+                    transmit(STATUS_FORBIDDEN, sock)
+                    sock.shutdown(socket.SHUT_RDWR)
+                    sock.close()
+                    return
+            try:
+                with open(source_path, 'r', encoding='utf-8') as source:
+                    for line in source:
+                        transmit(line.strip(), sock)
+            except OSError as error:
+                log.warn("Failed to open or read file")
+                log.warn("Requested file was {}".format(source_path))
+                log.warn("Exception: {}".format(error))
+                transmit(STATUS_NOT_FOUND, sock)
     else:
         log.info("Unhandled request: {}".format(request))
         transmit(STATUS_NOT_IMPLEMENTED, sock)
@@ -109,6 +125,7 @@ def transmit(msg, sock):
     while sent < len(msg):
         buff = bytes(msg[sent:], encoding="utf-8")
         sent += sock.send(buff)
+
 
 ###
 #
@@ -129,8 +146,8 @@ def get_options():
 
     if options.PORT <= 1000:
         log.warning(("Port {} selected. " +
-                         " Ports 0..1000 are reserved \n" +
-                         "by the operating system").format(options.port))
+                     " Ports 0..1000 are reserved \n" +
+                     "by the operating system").format(options.port))
 
     return options
 
