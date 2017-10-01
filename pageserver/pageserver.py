@@ -92,15 +92,18 @@ def respond(sock):
         log.debug("user is trying to access {}".format(url_path))
         source_path = os.path.join(DOCROOT, url_path)  # get rid of "/"
         # Checking to see if access either html or css or homepage
-        if url_path and ".html" not in url_path and ".css" not in url_path:
+        if url_path and ".html" not in url_path and ".css" not in url_path\
+                or ".." in url_path or "//" in url_path or "~" in url_path:
             transmit(STATUS_FORBIDDEN, sock)
         else:
+            """
             for i in INVALID_PATHS:
                 if i in parts[1]:  # Not trimmed here because "//" in beginning
                     transmit(STATUS_FORBIDDEN, sock)
                     sock.shutdown(socket.SHUT_RDWR)
                     sock.close()
                     return
+                    """
             try:
                 with open(source_path, 'r', encoding='utf-8') as source:
                     for line in source:
