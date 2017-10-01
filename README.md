@@ -1,3 +1,4 @@
 # Project 1 - pageserver
 
-## Author: Taisei Klasen , taiseik@uoregon.edu ##
+## Author:
+Taisei Klasen , taiseik@uoregon.edu

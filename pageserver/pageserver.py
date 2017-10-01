@@ -85,6 +85,7 @@ def respond(sock):
     log.info("Request was {}\n***\n".format(request))
 
     parts = request.split()
+    log.info(parts)
     if len(parts) > 1 and parts[0] == "GET":
         transmit(STATUS_OK, sock)
         url_path = parts[1][1:]
