@@ -90,7 +90,7 @@ def respond(sock):
         # Checking to see if access either html or css or homepage
         # ".." check is in here, but is not catching when the request
         # is sent???
-        if url_path and ".html" not in url_path and ".css" not in url_path\
+        if ".html" not in url_path and ".css" not in url_path\
                 or ".." in url_path or "//" in url_path or "~" in url_path:
             transmit(STATUS_FORBIDDEN, sock)
         else:
