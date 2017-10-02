@@ -60,15 +60,12 @@ def serve(sock, func):
         (clientsocket, address) = sock.accept()
         _thread.start_new_thread(func, (clientsocket,))
 
-
-DOCROOT = config.configuration().DOCROOT
-
 # HTTP response codes, as the strings we will actually send.
 # See:  https://en.wikipedia.org/wiki/List_of_HTTP_status_codes
 # or    http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
 ##
+DOCROOT = config.configuration().DOCROOT
 STATUS_OK = "HTTP/1.0 200 OK\n\n"
-INVALID_PATHS = ["..", "//", "~", "^", "*"]
 STATUS_FORBIDDEN = "HTTP/1.0 403 Forbidden\n\n"
 STATUS_NOT_FOUND = "HTTP/1.0 404 Not Found\n\n"
 STATUS_NOT_IMPLEMENTED = "HTTP/1.0 401 Not Implemented\n\n"
@@ -85,25 +82,18 @@ def respond(sock):
     log.info("Request was {}\n***\n".format(request))
 
     parts = request.split()
-    log.info(parts)
     if len(parts) > 1 and parts[0] == "GET":
         transmit(STATUS_OK, sock)
         url_path = parts[1][1:]
         log.debug("user is trying to access {}".format(url_path))
         source_path = os.path.join(DOCROOT, url_path)  # get rid of "/"
         # Checking to see if access either html or css or homepage
+        # ".." check is in here, but is not catching when the request
+        # is sent???
         if url_path and ".html" not in url_path and ".css" not in url_path\
                 or ".." in url_path or "//" in url_path or "~" in url_path:
             transmit(STATUS_FORBIDDEN, sock)
         else:
-            """
-            for i in INVALID_PATHS:
-                if i in parts[1]:  # Not trimmed here because "//" in beginning
-                    transmit(STATUS_FORBIDDEN, sock)
-                    sock.shutdown(socket.SHUT_RDWR)
-                    sock.close()
-                    return
-                    """
             try:
                 with open(source_path, 'r', encoding='utf-8') as source:
                     for line in source:
