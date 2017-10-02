@@ -84,14 +84,12 @@ def respond(sock):
     parts = request.split()
     if len(parts) > 1 and parts[0] == "GET":
         transmit(STATUS_OK, sock)
-        url_path = parts[1][1:]
+        url_path = parts[1][1:]  # get rid of '/'
         log.debug("user is trying to access {}".format(url_path))
-        source_path = os.path.join(DOCROOT, url_path)  # get rid of "/"
-        # Checking to see if access either html or css or homepage
-        # ".." check is in here, but is not catching when the request
-        # is sent???
+        source_path = os.path.join(DOCROOT, url_path)
+        # parts[1] for '//' so for double checks
         if ".html" not in url_path and ".css" not in url_path\
-                or ".." in url_path or "//" in url_path or "~" in url_path:
+                or ".." in url_path or "//" in parts[1] or "~" in url_path:
             transmit(STATUS_FORBIDDEN, sock)
         else:
             try:
